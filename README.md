@@ -1,9 +1,9 @@
 <div align="center">
   <img src="./.assets/banner.png" alt="ReasoningBank Banner" width="100%" style="border-radius: 10px; margin-bottom: 20px;">
 
-  # ReasoningBank: Self-Evolving AI Memory
+  # ReasoningBank: Scaling Agent Self-Evolving
   
-  [![arXiv](https://img.shields.io/badge/arXiv-2509.25140-B31B1B.svg)](https://arxiv.org/abs/2509.25140)
+  [![arXiv](https://img.shields.io/badge/arXiv-2501.12745-B31B1B.svg)](https://arxiv.org/abs/2501.12745)
   [![Weights & Biases](https://img.shields.io/badge/Weights%20%26%20Biases-Tracking-goldenrod)](https://wandb.ai)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
@@ -117,10 +117,10 @@ uv run mypy .
 ## 📜 Citation
 
 ```bibtex
-@article{reasoningbank2025,
-  title={ReasoningBank: Self-Evolving Memory for LLM Agents},
-  author={Hoffman, Frederick},
-  journal={arXiv preprint arXiv:2509.25140},
+@article{sun2025reasoningbank,
+  title={ReasoningBank: Scaling Agent Self-Evolving with Reasoning Memory},
+  author={Sun, Haikuo and Gao, Jing and others},
+  journal={arXiv preprint arXiv:2501.12745},
   year={2025}
 }
 ```
