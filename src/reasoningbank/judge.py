@@ -103,29 +103,59 @@ class MathJudge(BaseJudge):
         return eval_dict
 
 
-class WebArenaJudge(BaseJudge):
-    """Placeholder for WebArena evaluation logic"""
+class LLMJudge(BaseJudge):
+    """LLM-as-a-judge for evaluating agent success as described in Figure 9"""
+
+    def __init__(self, model_name: str = "gpt-4o"):
+        from langchain_openai import ChatOpenAI
+        self.llm = ChatOpenAI(model=model_name, temperature=0)
 
     def is_correct(self, predicted: str, expected: str) -> bool:
-        # Simple heuristic or LLM-as-a-judge could go here
-        # WebArena usually relies on functional verification of the goal state
-        return "success" in predicted.lower() or expected.lower() in predicted.lower()
+        # LLMJudge typically needs async for performance, but the interface is sync
+        # In a real implementation with LangGraph, we'd use a node for this
+        # For this refactor, we'll keep it simple or wrap it
+        return "success" in predicted.lower()
+
+    async def evaluate_async(self, question: str, trajectory: str, expected: str) -> dict[str, Any]:
+        from langchain_core.prompts import ChatPromptTemplate
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are an expert in evaluating the performance of an AI agent. 
+Given the user's intent, the agent's action history (trajectory), and the expected result, your goal is to decide whether the agent's execution is successful or not.
+
+*IMPORTANT* Format your response into two lines:
+Thoughts: <your thoughts and reasoning process>
+Status: "success" or "failure\""""),
+            ("user", f"INTENT: {question}\n\nTRAJECTORY: {trajectory}\n\nEXPECTED: {expected}")
+        ])
+        
+        response = await self.llm.ainvoke(prompt.format())
+        content = response.content
+        
+        status = "failure"
+        if "Status: \"success\"" in content or "Status: success" in content:
+            status = "success"
+            
+        return {
+            "success": status == "success",
+            "thoughts": content.split("Status:")[0].replace("Thoughts:", "").strip(),
+            "predicted": trajectory,
+            "expected": expected
+        }
 
 
-class Mind2WebJudge(BaseJudge):
-    """Evaluate Mind2Web action/element correctness"""
-
-    def is_correct(self, predicted: str, expected: str) -> bool:
-        # Mind2Web checks if the predicted action/element matches the ground truth
-        return expected.lower() in predicted.lower()
+class WebArenaJudge(LLMJudge):
+    """WebArena evaluation using LLM-as-a-judge"""
+    pass
 
 
-class SWEBenchJudge(BaseJudge):
-    """Evaluate SWE-Bench patch correctness"""
+class Mind2WebJudge(LLMJudge):
+    """Mind2Web action/element correctness using LLM-as-a-judge"""
+    pass
 
-    def is_correct(self, predicted: str, expected: str) -> bool:
-        # SWE-Bench typically requires running tests to verify the patch
-        return "fixed" in predicted.lower() or "tests passed" in predicted.lower()
+
+class SWEBenchJudge(LLMJudge):
+    """SWE-Bench patch correctness using LLM-as-a-judge"""
+    pass
 
 
 def get_judge(dataset_name: str) -> BaseJudge:

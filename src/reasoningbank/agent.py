@@ -64,7 +64,7 @@ class AgentGraph:
         self.graph = workflow.compile()
 
     def _get_system_message(self, phase: str = "solve") -> str:
-        """Get dataset-specific system messages"""
+        """Get dataset-specific system messages aligned with Figure 7/8 of the paper"""
         ds = self.dataset.lower()
         if "webarena" in ds:
             role = "expert web browsing assistant"
@@ -80,7 +80,8 @@ class AgentGraph:
             instruction = "Solve the problem step-by-step. End your response with '#### <numeric_answer>'."
 
         if phase == "refine":
-            return f"You are an {role} in correction mode. Your previous attempt was incorrect. Review your strategy, identify the mistake, and provide a corrected solution. {instruction}"
+            # Matching the Refinement prompt from the paper
+            return f"Important! Let's carefully re-examine the previous trajectory, including your reasoning steps and actions taken. {instruction} If you find inconsistencies, correct them. If everything seems correct, confirm your final answer."
         
         return f"You are an {role}. {instruction}"
 
@@ -105,8 +106,8 @@ class AgentGraph:
         system_msg = self._get_system_message("solve")
         prompt = ChatPromptTemplate.from_messages([
             ("system", f"""{system_msg}
-            
-Use the following past strategy hints if helpful:
+
+Below are some memory items that I accumulated from past interaction from the environment that may be helpful to solve the task. You can use it when you feel it’s relevant. In each step, please first explicitly discuss if you want to use each memory item or not, and then take action.
             
 {formatted_memories}"""),
             ("user", state["question"])
@@ -157,17 +158,31 @@ Use the following past strategy hints if helpful:
         return "select" if all_correct else "refine"
 
     async def select_best_node(self, state: AgentState) -> dict[str, Any]:
-        """Select the best trajectory for final output and extraction"""
-        best_traj = state["trajectories"][0]
-        success = False
-        
-        # Prioritize any correct trajectory
-        for traj in state["trajectories"]:
-            if self.judge.is_correct(traj, state["expected_answer"] or ""):
-                best_traj = traj
-                success = True
-                break
-        
+        """Select the best trajectory using LLM-as-a-judge for BoN selection (Figure 11)"""
+        if len(state["trajectories"]) == 1:
+            best_traj = state["trajectories"][0]
+        else:
+            # Implement LLM selection as described in the paper
+            trajectories_text = "\n\n".join([f"Trajectory {i}:\n{t}" for i, t in enumerate(state['trajectories'])])
+            selection_prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are an expert in evaluating agent trajectories. Your job is to select the single best trajectory that most effectively and efficiently solves the task. Return the evaluation as a JSON object: { \"index\": [best_trajectory_index], \"analysis\": \"...\" }"),
+                ("user", f"PROBLEM: {state['question']}\n\n{trajectories_text}")
+            ])
+            # Use a slightly more deterministic temperature for selection
+            judge_llm = ChatOpenAI(model=self.llm.model_name, temperature=0)
+            response = await judge_llm.ainvoke(selection_prompt.format())
+            
+            try:
+                import json
+                # Handle potential triple backticks in JSON response
+                clean_content = response.content.replace("```json", "").replace("```", "").strip()
+                data = json.loads(clean_content)
+                idx = int(data.get("index", 0))
+                best_traj = state["trajectories"][idx]
+            except Exception:
+                best_traj = state["trajectories"][0]
+
+        success = self.judge.is_correct(best_traj, state["expected_answer"] or "")
         evaluation = self.judge.evaluate(best_traj, state["expected_answer"] or "")
         return {"solution": best_traj, "success": success, "evaluation": evaluation}
 

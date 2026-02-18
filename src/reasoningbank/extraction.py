@@ -24,40 +24,36 @@ class MemoryExtractor:
 
         if success:
             prompt = ChatPromptTemplate.from_messages([
-                ("system", "You are an expert reasoning distiller. Extract 1-2 generalizable reasoning strategies from a successful problem-solving trajectory."),
+                ("system", "You are an expert in web navigation and reasoning distillation. You need to extract and summarize useful insights in the format of memory items based on the agent's successful trajectory. You must first think why the trajectory is successful, and then summarize the insights."),
                 ("user", f"""PROBLEM: {question}
                 
 TRAJECTORY: {trajectory}
 
-Extract strategies that helped solve this problem and can be applied to other similar problems.
-Format each strategy exactly as follows:
+Extract generalizable reasoning strategies. Format each memory item using Markdown:
+# Memory Item 1
+## Title: <concise name>
+## Description: <one sentence summary>
+## Content: <detailed transferable strategy steps>
 
-STRATEGY 1
-TITLE: <concise name>
-DESCRIPTION: <one sentence summary>
-CONTENT: <detailed transferable strategy steps>
-
-STRATEGY 2
+# Memory Item 2
 ...""")
             ])
         else:
             prompt = ChatPromptTemplate.from_messages([
-                ("system", "You are an expert reasoning distiller. Extract 1-2 lessons about what went wrong from a failed problem-solving trajectory."),
+                ("system", "You are an expert in reasoning distillation. You will be given a user query and a trajectory that failed. You must first reflect and think why the trajectory failed, and then summarize what lessons you have learned or strategies to prevent the failure in the future."),
                 ("user", f"""PROBLEM: {question}
                 
 TRAJECTORY: {trajectory}
 
 EXPECTED ANSWER: {expected_answer}
 
-Extract lessons or preventive strategies to avoid these mistakes in the future.
-Format each lesson exactly as follows:
+Extract lessons or preventive strategies. Format each memory item using Markdown:
+# Memory Item 1
+## Title: <concise name>
+## Description: <one sentence summary>
+## Content: <detailed preventive steps or checklist>
 
-STRATEGY 1
-TITLE: <concise name>
-DESCRIPTION: <one sentence summary>
-CONTENT: <detailed preventive steps or check list>
-
-STRATEGY 2
+# Memory Item 2
 ...""")
             ])
 
@@ -65,34 +61,41 @@ STRATEGY 2
         return self._parse_response(response.content, problem_id, success)
 
     def _parse_response(self, text: str, problem_id: str, success: bool) -> list[MemoryItem]:
-        """Parse structured text into MemoryItem objects"""
+        """Parse Markdown-style text into MemoryItem objects"""
         memories = []
-        parts = text.split("STRATEGY ")
+        # Split by # Memory Item header
+        items = text.split("# Memory Item")
 
-        for part in parts[1:]:
+        for item in items[1:]:
             try:
-                lines = part.strip().split("\n")
                 title = ""
                 description = ""
                 content = []
 
+                lines = item.strip().split("\n")
                 collecting_content = False
+                
                 for line in lines:
-                    if line.startswith("TITLE:"):
-                        title = line.replace("TITLE:", "").strip()
-                    elif line.startswith("DESCRIPTION:"):
-                        description = line.replace("DESCRIPTION:", "").strip()
-                    elif line.startswith("CONTENT:"):
-                        content.append(line.replace("CONTENT:", "").strip())
+                    line = line.strip()
+                    if line.startswith("## Title:"):
+                        title = line.replace("## Title:", "").strip()
+                    elif line.startswith("## Description:"):
+                        description = line.replace("## Description:", "").strip()
+                    elif line.startswith("## Content:"):
+                        content.append(line.replace("## Content:", "").strip())
                         collecting_content = True
-                    elif collecting_content:
-                        content.append(line.strip())
+                    elif collecting_content and line:
+                        # Append line to content if it's not another header
+                        if not line.startswith("##"):
+                            content.append(line)
+                        else:
+                            collecting_content = False
 
                 if title and description and content:
                     memories.append(MemoryItem(
                         title=title,
                         description=description,
-                        content="\n".join(content),
+                        content="\n".join(content).strip(),
                         source_problem_id=problem_id,
                         success=success,
                         created_at=datetime.now().isoformat()
