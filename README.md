@@ -67,15 +67,15 @@ Reproduce the paper's results on GSM8K or MATH datasets with a single command.
 # Run a 10-problem test on GSM8K
 uv run src/main.py --dataset gsm8k --limit 10
 
-# Run with custom scaling parameters (e.g., N=5)
-uv run src/main.py --dataset math --limit 20 --N 5
+# Run with custom scaling factor (e.g., k=5)
+uv run src/main.py --dataset math --limit 20 --k 5
 ```
 
 ### Key Arguments
-- `--dataset`: Choice of `gsm8k` or `math`.
+- `--dataset`: Choice of `gsm8k` or `math`, `webarena`, `mind2web`, `swebench`.
 - `--limit`: Number of problems to evaluate.
 - `--clear-bank`: Reset the memory bank before starting (useful for clean-slate baselines).
-- `--N`: Number of parallel reasoning trajectories (Test-Time Scaling).
+- `-k`, `--k`: scaling factor for MaTTS (both parallel trajectories and sequential refinements).
 
 ---
 

@@ -17,8 +17,7 @@ async def main():
     parser.add_argument("--bank", type=str, default="memory_bank.json", help="Memory bank file")
     parser.add_argument("--clear-bank", action="store_true", help="Clear memory bank before starting")
 
-    parser.add_argument("--N", type=int, default=3, help="Parallel trajectories (N)")
-    parser.add_argument("--max-refinements", type=int, default=5, help="Max sequential refinements")
+    parser.add_argument("-k", "--k", type=int, default=3, help="MaTTS scaling factor (both parallel and sequential)")
 
     args = parser.parse_args()
 
@@ -27,14 +26,19 @@ async def main():
     if args.clear_bank:
         bank.clear()
 
-    agent = AgentGraph(bank, N=args.N, max_refinements=args.max_refinements, dataset=args.dataset)
+    agent = AgentGraph(bank, k=args.k, dataset=args.dataset)
     evaluator = ReasoningBankEvaluator(agent)
 
     # Run evaluation
     print(f"Starting evaluation on {args.dataset} (limit={args.limit})...")
     await evaluator.evaluate_dataset(
         dataset_name=args.dataset,
-        limit=args.limit
+        limit=args.limit,
+        config={
+            "dataset": args.dataset,
+            "limit": args.limit,
+            "k": args.k
+        }
     )
     print("Evaluation completed.")
 

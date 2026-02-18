@@ -20,8 +20,7 @@ class AgentGraph:
         bank: ReasoningBank,
         model_name: str = "gpt-4o-mini",
         embedding_model: str = "text-embedding-3-small",
-        N: int = 3,
-        max_refinements: int = 5,
+        k: int = 3,
         dataset: str = "gsm8k"
     ):
         self.bank = bank
@@ -29,8 +28,9 @@ class AgentGraph:
         self.extractor = MemoryExtractor(model_name)
         self.judge: BaseJudge = get_judge(dataset)
         self.llm = ChatOpenAI(model=model_name, temperature=0.7)
-        self.N = N
-        self.max_refinements = max_refinements
+        self.k = k
+        self.N = k
+        self.max_refinements = k
         self.dataset = dataset
 
         # Build the graph
