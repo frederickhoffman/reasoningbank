@@ -102,21 +102,6 @@ graph TD
 
 ---
 
-## 🧪 Development
-
-### Running Tests
-```bash
-uv run pytest tests/
-```
-
-### Linting & Types
-```bash
-uv run ruff check .
-uv run mypy .
-```
-
----
-
 ## 📜 Citation
 
 ```bibtex
