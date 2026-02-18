@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
 from .extraction import MemoryExtractor
-from .judge import MathJudge
+from .judge import MathJudge, BaseJudge, get_judge
 from .memory import ReasoningBank
 from .retrieval import MemoryRetriever
 from .state import AgentState
@@ -21,15 +21,17 @@ class AgentGraph:
         model_name: str = "gpt-4o-mini",
         embedding_model: str = "text-embedding-3-small",
         N: int = 3,
-        max_refinements: int = 5
+        max_refinements: int = 5,
+        dataset: str = "gsm8k"
     ):
         self.bank = bank
         self.retriever = MemoryRetriever(embedding_model)
         self.extractor = MemoryExtractor(model_name)
-        self.judge = MathJudge()
+        self.judge: BaseJudge = get_judge(dataset)
         self.llm = ChatOpenAI(model=model_name, temperature=0.7)
         self.N = N
         self.max_refinements = max_refinements
+        self.dataset = dataset
 
         # Build the graph
         workflow = StateGraph(AgentState)
@@ -61,6 +63,27 @@ class AgentGraph:
 
         self.graph = workflow.compile()
 
+    def _get_system_message(self, phase: str = "solve") -> str:
+        """Get dataset-specific system messages"""
+        ds = self.dataset.lower()
+        if "webarena" in ds:
+            role = "expert web browsing assistant"
+            instruction = "Navigate the web to achieve the user's intent. Provide your actions in a clear, executable format."
+        elif "mind2web" in ds:
+            role = "web operation expert"
+            instruction = "Identify the correct element and action to perform based on the task intent and page state."
+        elif "swe" in ds:
+            role = "senior software engineer"
+            instruction = "Resolve the issue described in the problem statement. Provide a patch or a sequence of bash commands to fix the bug."
+        else:
+            role = "expert math problem solver"
+            instruction = "Solve the problem step-by-step. End your response with '#### <numeric_answer>'."
+
+        if phase == "refine":
+            return f"You are an {role} in correction mode. Your previous attempt was incorrect. Review your strategy, identify the mistake, and provide a corrected solution. {instruction}"
+        
+        return f"You are an {role}. {instruction}"
+
     async def retrieve_node(self, state: AgentState) -> dict[str, Any]:
         """Fetch top-1 relevant memory from ReasoningBank"""
         memories = self.bank.get_all()
@@ -79,12 +102,13 @@ class AgentGraph:
             [(m, 1.0) for m in state["retrieved_memories"]]
         )
         
+        system_msg = self._get_system_message("solve")
         prompt = ChatPromptTemplate.from_messages([
-            ("system", f"""You are a math problem solver. Use the following past strategy hints if helpful.
+            ("system", f"""{system_msg}
             
-{formatted_memories}
-
-Solve the problem step-by-step. End your response with '#### <numeric_answer>'."""),
+Use the following past strategy hints if helpful:
+            
+{formatted_memories}"""),
             ("user", state["question"])
         ])
         
@@ -98,6 +122,8 @@ Solve the problem step-by-step. End your response with '#### <numeric_answer>'."
     async def refine_sequential_node(self, state: AgentState) -> dict[str, Any]:
         """Iteratively refine failed trajectories (Sequential MATTS)"""
         new_trajectories = []
+        system_msg = self._get_system_message("refine")
+        
         for traj in state["trajectories"]:
             # Check if current trajectory is correct
             is_correct = self.judge.is_correct(traj, state["expected_answer"] or "")
@@ -107,7 +133,7 @@ Solve the problem step-by-step. End your response with '#### <numeric_answer>'."
             else:
                 # Refine
                 refine_prompt = ChatPromptTemplate.from_messages([
-                    ("system", "You are an expert math corrector. Your previous attempt was incorrect or incomplete. Review your strategy and findings, identify the mistake, and provide a corrected solution. End with '#### <numeric_answer>'."),
+                    ("system", system_msg),
                     ("user", f"PROBLEM: {state['question']}\n\nPREVIOUS ATTEMPT: {traj}\n\nREVISED SOLUTION:")
                 ])
                 response = await self.llm.ainvoke(refine_prompt.format())
@@ -141,9 +167,6 @@ Solve the problem step-by-step. End your response with '#### <numeric_answer>'."
                 best_traj = traj
                 success = True
                 break
-        
-        # If none are correct, could use an LLM-as-a-judge to pick the most promising
-        # For now, pick the first one as fallback
         
         evaluation = self.judge.evaluate(best_traj, state["expected_answer"] or "")
         return {"solution": best_traj, "success": success, "evaluation": evaluation}

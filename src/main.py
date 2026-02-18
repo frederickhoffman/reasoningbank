@@ -12,7 +12,7 @@ async def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description="Run ReasoningBank evaluation")
-    parser.add_argument("--dataset", type=str, default="gsm8k", help="Dataset (gsm8k/math)")
+    parser.add_argument("--dataset", type=str, default="gsm8k", help="Dataset (gsm8k/math/webarena/mind2web/swebench)")
     parser.add_argument("--limit", type=int, default=10, help="Number of problems to test")
     parser.add_argument("--bank", type=str, default="memory_bank.json", help="Memory bank file")
     parser.add_argument("--clear-bank", action="store_true", help="Clear memory bank before starting")
@@ -27,7 +27,7 @@ async def main():
     if args.clear_bank:
         bank.clear()
 
-    agent = AgentGraph(bank, N=args.N, max_refinements=args.max_refinements)
+    agent = AgentGraph(bank, N=args.N, max_refinements=args.max_refinements, dataset=args.dataset)
     evaluator = ReasoningBankEvaluator(agent)
 
     # Run evaluation

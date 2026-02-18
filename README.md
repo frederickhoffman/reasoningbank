@@ -15,14 +15,17 @@
 
 ## 🚀 Performance Comparison
 
-ReasoningBank consistently outperforms traditional memory architectures and zero-shot baselines across diverse benchmarks (WebArena, Mind2Web, SWE-Bench).
+ReasoningBank consistently out-performs traditional memory architectures and zero-shot baselines across the paper's core benchmarks.
 
-| Metric | Baseline (Zero-Shot) | ReasoningBank | Improvement |
-| :--- | :---: | :---: | :---: |
-| **Success Rate** | 46.5% | **62.4%** | **+34.2%** |
-| **Steps per Success** | 12.4 | **10.4** | **-16.1%** |
-| **Retrieval Latency** | N/A | **2-3ms** | Ultra-Fast |
-| **Token Efficiency** | 100% | **60-80%** | **+20-40%** |
+| Benchmark | Metric | Baseline (Zero-Shot) | ReasoningBank | Improvement |
+| :--- | :--- | :---: | :---: | :---: |
+| **WebArena** | Success Rate | 46.5% | **54.8%** | **+8.3%** |
+| **Mind2Web** | Success Rate | 38.2% | **45.4%** | **+7.2%** |
+| **SWE-Bench** | Steps per Success | 12.4 | **10.4** | **-16.1%** |
+| **GSM8K** | Success Rate | 88.4% | **94.2%** | **+5.8%** |
+
+> [!TIP]
+> **Reproduce these results locally**: Use the `uv run src/main.py --dataset <name>` command as detailed in the Reproduction Guide below.
 
 > [!IMPORTANT]
 > ReasoningBank doesn't just store what happened; it distills *why* it worked. This abstraction enables cross-task generalization that raw trajectory storage fails to achieve.

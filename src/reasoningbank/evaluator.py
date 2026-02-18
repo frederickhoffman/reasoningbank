@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from .agent import AgentGraph
 from .state import AgentState
+from .judge import get_judge
 
 
 class ReasoningBankEvaluator:
@@ -30,17 +31,38 @@ class ReasoningBankEvaluator:
             config=config or {"dataset": dataset_name, "split": split, "limit": limit}
         )
 
-        # Load dataset
-        if dataset_name == "gsm8k":
-            ds = load_dataset("gsm8k", "main", split=split)
-            question_key = "question"
-            answer_key = "answer"
-        elif dataset_name == "math":
-            ds = load_dataset("competition_math", split=split)
+        # Dataset configuration
+        question_key = "question"
+        answer_key = "answer"
+        load_kwargs = {}
+
+        dataset_name_lower = dataset_name.lower()
+        if dataset_name_lower == "gsm8k":
+            load_kwargs = {"path": "gsm8k", "name": "main"}
+        elif dataset_name_lower == "math":
+            load_kwargs = {"path": "competition_math"}
             question_key = "problem"
             answer_key = "solution"
+        elif "webarena" in dataset_name_lower:
+            # Using a public subset if available or placeholder
+            load_kwargs = {"path": "osunlp/WebArena"}
+            question_key = "intent"
+            answer_key = "eval_script" # WebArena often uses eval scripts
+        elif "mind2web" in dataset_name_lower:
+            load_kwargs = {"path": "osunlp/Mind2Web"}
+            question_key = "intent"
+            answer_key = "action_repr"
+        elif "swe" in dataset_name_lower:
+            load_kwargs = {"path": "princeton-nlp/SWE-bench_Verified"}
+            question_key = "problem_statement"
+            answer_key = "patch"
         else:
             raise ValueError(f"Unsupported dataset: {dataset_name}")
+
+        ds = load_dataset(**load_kwargs, split=split)
+        
+        # Update agent judge for this dataset
+        self.agent_graph.judge = get_judge(dataset_name)
 
         results = []
         success_count = 0
@@ -48,13 +70,13 @@ class ReasoningBankEvaluator:
         # Run agent on dataset
         for i in tqdm(range(min(limit, len(ds))), desc=f"Evaluating {dataset_name}"):
             item = ds[i]
-            question = item[question_key]
-            expected = item[answer_key]
+            question = item.get(question_key, "")
+            expected = item.get(answer_key, "")
 
             initial_state: AgentState = {
                 "problem_id": f"{dataset_name}_{i}",
-                "question": question,
-                "expected_answer": expected,
+                "question": str(question),
+                "expected_answer": str(expected),
                 "retrieved_memories": [],
                 "trajectories": [],
                 "refinement_steps": 0,
