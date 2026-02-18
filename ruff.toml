@@ -1,0 +1,11 @@
+# ruff.toml
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "I", "N", "W", "C90", "UP", "B", "PL"]
+ignore = ["E501"] # Line length is handled by formatter
+
+[format]
+quote-style = "double"
+indent-style = "space"
