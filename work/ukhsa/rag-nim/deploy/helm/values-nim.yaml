@@ -1,0 +1,24 @@
+# Self-Hosted NIM Configuration for NVIDIA RAG Blueprint
+# This file overrides values in values.yaml to point to local NIM services.
+
+# LLM Configuration
+# Assuming a NIM is deployed at 'llm-nim' service
+APP_LLM_SERVERURL: "http://llm-nim:8000/v1"
+APP_LLM_MODELNAME: "nvidia/llama-3.3-nemotron-super-49b-v1.5"
+
+# Embedding Configuration
+# Assuming a NIM is deployed at 'embedding-nim' service
+APP_EMBEDDINGS_SERVERURL: "http://embedding-nim:8000/v1"
+APP_EMBEDDINGS_MODELNAME: "nvidia/nv-embedqa-e5-v5"
+
+# Reranking Configuration
+# Assuming a NIM is deployed at 'reranking-nim' service
+APP_RANKING_SERVERURL: "http://reranking-nim:8000/v1"
+APP_RANKING_MODELNAME: "nvidia/nv-rerankqa-mistral-4b-v3"
+
+# Common Settings
+# Clear global API key if all NIMs are local and don't require keys
+# NVIDIA_API_KEY: ""
+
+# Individual component keys (if any local auth is used)
+# APP_LLM_APIKEY: "local-secret"

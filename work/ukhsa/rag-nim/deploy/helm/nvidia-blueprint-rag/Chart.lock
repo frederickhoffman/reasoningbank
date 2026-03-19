@@ -1,0 +1,18 @@
+dependencies:
+- name: nv-ingest
+  repository: https://helm.ngc.nvidia.com/nvidia/nemo-microservices
+  version: 26.1.1
+- name: eck-elasticsearch
+  repository: https://helm.elastic.co
+  version: 0.18.0
+- name: zipkin
+  repository: https://zipkin.io/zipkin-helm
+  version: 0.4.0
+- name: opentelemetry-collector
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+  version: 0.130.2
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 76.3.0
+digest: sha256:7f85073bdf19922173b3372d9b5a877d6c2f783b431ce7a2f783308f67806c66
+generated: "2026-02-04T07:29:44.453434343Z"

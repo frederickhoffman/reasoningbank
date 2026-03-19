@@ -1,0 +1,75 @@
+{{- if .Values.modelScan.enabled -}}
+{{- $root := . -}}
+{{- range $service := .Values.modelScan.scanServices -}}
+{{- /* Check if the service is actually enabled in nimOperator */ -}}
+{{- $nimConfig := index $root.Values.nimOperator $service -}}
+{{- if and $nimConfig $nimConfig.enabled -}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "nvidia-blueprint-rag.fullname" $root }}-{{ $service }}-scanner
+  labels:
+    {{- include "nvidia-blueprint-rag.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: model-scanner
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    metadata:
+      metadata:
+        labels:
+          {{- include "nvidia-blueprint-rag.selectorLabels" $root | nindent 10 }}
+    spec:
+      {{- with $root.Values.imagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .name }}
+      {{- end }}
+      containers:
+      - name: modelscan
+        image: "{{ $root.Values.modelScan.image.repository }}:{{ $root.Values.modelScan.image.tag }}"
+        imagePullPolicy: {{ $root.Values.modelScan.image.pullPolicy }}
+        env:
+          - name: MODELSCAN_FAIL_ON_VIOLATION
+            value: {{ $root.Values.modelScan.failOnViolation | quote }}
+          - name: MODELSCAN_SEVERITY_THRESHOLD
+            value: {{ $root.Values.modelScan.severityThreshold | quote }}
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting Protect AI ModelScan for service: {{ $service }}"
+            echo "Scanning directory: /models"
+            
+            # Run modelscan
+            # We use --reporting-format json to allow for more granular parsing if needed
+            modelscan -p /models/ --reporting-format json --output-file /tmp/report.json
+            EXIT_CODE=$?
+            
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "--------------------------------------------------"
+              echo "CRITICAL: ModelScan detected potential vulnerabilities!"
+              cat /tmp/report.json
+              echo "--------------------------------------------------"
+              
+              if [ "${MODELSCAN_FAIL_ON_VIOLATION}" = "true" ]; then
+                echo "FAIL_ON_VIOLATION is enabled. Blocking deployment."
+                exit 1
+              fi
+            else
+              echo "Scan completed: No vulnerabilities found in {{ $service }}."
+            fi
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+          readOnly: true
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          # Match the naming convention in the NIM Operator templates
+          claimName: {{ $nimConfig.service.name }}-cache
+      restartPolicy: Never
+  backoffLimit: 0
+{{- end -}}
+{{- end -}}
+{{- end -}}

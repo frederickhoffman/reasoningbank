@@ -1,0 +1,46 @@
+# Values override to enable and use NVIDIA NIM Operator for model serving.
+# This file enables NIM-based LLM, Embedding, and Reranking using the ClusterIP
+# services managed by the NVIDIA NIM Operator.
+
+# 1. Enable NIM Operator resources
+nimOperator:
+  # LLM NIM
+  nim-llm:
+    enabled: true
+    service:
+      name: "nim-llm"
+  # Embedding NIM
+  nvidia-nim-llama-32-nv-embedqa-1b-v2:
+    enabled: true
+    service:
+      name: "nemoretriever-embedding-ms"
+  # Reranking NIM
+  nvidia-nim-llama-32-nv-rerankqa-1b-v2:
+    enabled: true
+    service:
+      name: "nemoretriever-ranking-ms"
+
+# 2. Point RAG Server to the NIM Operator services
+envVars:
+  APP_LLM_SERVERURL: "http://nim-llm:8000/v1"
+  APP_EMBEDDINGS_SERVERURL: "http://nemoretriever-embedding-ms:8000/v1"
+  APP_RANKING_SERVERURL: "http://nemoretriever-ranking-ms:8000/v1"
+  REFLECTION_LLM_SERVERURL: "http://nim-llm:8000/v1"
+  APP_QUERYREWRITER_SERVERURL: "http://nim-llm:8000/v1"
+  APP_FILTEREXPRESSIONGENERATOR_SERVERURL: "http://nim-llm:8000/v1"
+
+# 3. Point Ingestor Server to the NIM Operator services
+ingestor-server:
+  envVars:
+    APP_EMBEDDINGS_SERVERURL: "http://nemoretriever-embedding-ms:8000/v1"
+    SUMMARY_LLM_SERVERURL: "http://nim-llm:8000/v1"
+
+# 4. Enable Model Security Scanning (Protect AI ModelScan)
+modelScan:
+  enabled: true
+  failOnViolation: true
+  severityThreshold: "high"
+  scanServices:
+    - nim-llm
+    - nvidia-nim-llama-32-nv-embedqa-1b-v2
+    - nvidia-nim-llama-32-nv-rerankqa-1b-v2
