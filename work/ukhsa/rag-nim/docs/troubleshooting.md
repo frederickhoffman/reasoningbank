@@ -113,40 +113,40 @@ docker stats nim-llm-ms nemoretriever-embedding-ms nemoretriever-ranking-ms
 **Check NIMCache status:**
 ```bash
 # View cache download status
-kubectl get nimcache -n rag
+oc get nimcache -n rag
 
 # Watch cache status in real-time
-kubectl get nimcache -n rag -w
+oc get nimcache -n rag -w
 ```
 
 **Check pod logs:**
 ```bash
 # List pods
-kubectl get pods -n rag
+oc get pods -n rag
 
 # View logs of a specific NIM pod
-kubectl logs -f <nim-pod-name> -n rag
+oc logs -f <nim-pod-name> -n rag
 
 # View init container logs (where downloads occur)
-kubectl logs <pod-name> -n rag -c <init-container-name>
+oc logs <pod-name> -n rag -c <init-container-name>
 ```
 
 **Check PVC usage:**
 ```bash
 # View persistent volume claims
-kubectl get pvc -n rag
+oc get pvc -n rag
 
 # Describe a specific PVC to see capacity and usage
-kubectl describe pvc <pvc-name> -n rag
+oc describe pvc <pvc-name> -n rag
 ```
 
 **Check events for download progress:**
 ```bash
 # View recent events sorted by time
-kubectl get events -n rag --sort-by='.lastTimestamp'
+oc get events -n rag --sort-by='.lastTimestamp'
 
 # Watch events in real-time
-kubectl get events -n rag -w
+oc get events -n rag -w
 ```
 
 :::{note}
@@ -383,9 +383,9 @@ volumeBindingMode: WaitForFirstConsumer
 If using `local-path` provisioner, it does not support `ReadWriteMany` access mode, which is the default for some NIM Caches.
 **Fix:** Patch the NIMCache resources to use `ReadWriteOnce`:
 ```bash
-kubectl patch nimcache nemoretriever-page-elements-v3 -n rag --type='merge' -p '{"spec":{"storage":{"pvc":{"volumeAccessMode":"ReadWriteOnce"}}}}'
+oc patch nimcache nemoretriever-page-elements-v3 -n rag --type='merge' -p '{"spec":{"storage":{"pvc":{"volumeAccessMode":"ReadWriteOnce"}}}}'
 # Repeat for other affected caches (table-structure-v1, ocr-v1, graphic-elements-v1)
-kubectl delete pvc nemoretriever-page-elements-v3-pvc -n rag --wait=false # Delete pending PVC to trigger recreation
+oc delete pvc nemoretriever-page-elements-v3-pvc -n rag --wait=false # Delete pending PVC to trigger recreation
 ```
 
 ### Ingestor-server out of memory (OOM) with large documents

@@ -114,11 +114,11 @@ For detailed HELM deployment instructions, see [Helm Deployment Guide](deploy-he
 List results inside the ingestor-server pod (default mount path `/data/`):
 
 ```bash
-kubectl -n rag exec -it <ingestor-pod> -- ls -l /data/
+oc -n rag exec -it <ingestor-pod> -- ls -l /data/
 ```
 
 Copy data from the pod to your local computer:
 
 ```bash
-kubectl -n rag cp <ingestor-pod>:/data/ ./ingestor-data
+oc -n rag cp <ingestor-pod>:/data/ ./ingestor-data
 ```

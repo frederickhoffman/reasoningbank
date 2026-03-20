@@ -4,7 +4,7 @@
 -->
 # Deploy NVIDIA RAG Blueprint on Kubernetes with Helm
 
-Use the following documentation to deploy the [NVIDIA RAG Blueprint](readme.md) on a Kubernetes cluster by using Helm.
+Use the following documentation to deploy the [NVIDIA RAG Blueprint](readme.md) on a OpenShift cluster by using Helm.
 
 - To deploy the Helm chart with MIG support, refer to [RAG Deployment with MIG Support](./mig-deployment.md).
 - To deploy with Helm from the repository, refer to [Deploy Helm from the repository](deploy-helm-from-repo.md).
@@ -42,15 +42,15 @@ Plan for additional space if you are enabling persistence for multiple services.
 6. Verify that you have a default storage class available in the cluster for PVC provisioning. One option is the local path provisioner by Rancher.   Refer to the [installation](https://github.com/rancher/local-path-provisioner?tab=readme-ov-file#installation) section of the README in the GitHub repository.
 
     ```console
-    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
-    kubectl get pods -n local-path-storage
-    kubectl get storageclass
+    oc apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+    oc get pods -n local-path-storage
+    oc get storageclass
     ```
 
 7. If the local path storage class is not set as default, you can make it default by running the following code.
 
     ```
-    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+    oc patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
     ```
 
 8. Verify that you have installed the NVIDIA GPU Operator by using the instructions [here](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html).
@@ -81,7 +81,7 @@ To deploy End-to-End RAG Server and Ingestor Server, use the following procedure
 1. Create a namespace for the deployment by running the following code.
 
     ```sh
-    kubectl create namespace rag
+    oc create namespace rag
     ```
 
 2. Install the Helm chart by running the following command.
@@ -133,7 +133,7 @@ To verify a deployment, use the following procedure.
 1. List the pods by running the following code.
 
     ```sh
-    kubectl get pods -n rag
+    oc get pods -n rag
     ```
 
     You should see output similar to the following.
@@ -176,22 +176,22 @@ To verify a deployment, use the following procedure.
 
    ```sh
    # Check pod status
-   kubectl get pods -n rag
+   oc get pods -n rag
 
    # Check NIMCache download status (shows if cache is ready)
-   kubectl get nimcache -n rag
+   oc get nimcache -n rag
 
    # Check NIMService status
-   kubectl get nimservice -n rag
+   oc get nimservice -n rag
 
    # Check events for detailed information
-   kubectl get events -n rag --sort-by='.lastTimestamp'
+   oc get events -n rag --sort-by='.lastTimestamp'
 
    # Watch logs of a specific pod to see detailed progress
-   kubectl logs -f <pod-name> -n rag
+   oc logs -f <pod-name> -n rag
    
    # Check PVC usage to monitor cache download size
-   kubectl get pvc -n rag
+   oc get pvc -n rag
    ```
    
    Subsequent deployments are significantly faster (~10-15 minutes) because model caches are already populated.
@@ -200,7 +200,7 @@ To verify a deployment, use the following procedure.
 2.  List services by running the following code.
 
     ```sh
-    kubectl get svc -n rag
+    oc get svc -n rag
     ```
 
     You should see output similar to the following.
@@ -233,7 +233,7 @@ To verify a deployment, use the following procedure.
 - [RAG UI](user-interface.md) – Run the following code to port-forward the RAG UI service to your local machine. Then access the RAG UI at `http://localhost:3000`.
 
   ```sh
-  kubectl port-forward -n rag service/rag-frontend 3000:3000 --address 0.0.0.0
+  oc port-forward -n rag service/rag-frontend 3000:3000 --address 0.0.0.0
   ```
 
 :::{note}
@@ -270,8 +270,8 @@ helm uninstall rag -n rag
 Run the following code to remove the NIMCache and Persistent Volume Claims (PVCs) created by the chart which are not removed by default.
 
 ```sh
-kubectl delete nimcache --all -n rag
-kubectl delete pvc --all -n rag
+oc delete nimcache --all -n rag
+oc delete pvc --all -n rag
 ```
 
 ## (Optional) Enable Persistence

@@ -1,0 +1,37 @@
+# OpenShift Specific Overrides for NVIDIA RAG Blueprint
+# This file provides declarative overrides for deploying to Red Hat OpenShift.
+
+# subsection: rag-server
+serviceAccount:
+  create: true
+  name: "rag-server"
+
+imagePullSecret:
+  name: "ngc-secret"
+  create: false # Assumes secret is already created as per README
+
+# -- Resource scheduling for OpenShift GPU nodes
+nodeSelector:
+  nvidia.com/gpu.present: "true"
+
+# subsection: ingestor-server
+ingestor-server:
+  persistence:
+    # Set this to your OpenShift storage class (e.g., "ocs-storagecluster-ceph-rbd")
+    # If empty, the cluster's default storage class will be used.
+    storageClass: ""
+  
+  nodeSelector:
+    nvidia.com/gpu.present: "true"
+
+# subsection: nim-operator
+# Overrides for models managed by the NIM Operator
+nimOperator:
+  nim-llm:
+    storage:
+      pvc:
+        storageClass: "" # OpenShift storage class for model weights
+  nvidia-nim-llama-32-nv-embedqa-1b-v2:
+    storage:
+      pvc:
+        storageClass: ""

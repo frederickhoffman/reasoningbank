@@ -313,7 +313,7 @@ For detailed HELM deployment instructions, see [Helm Deployment Guide](deploy-he
 Verify the VLM pods are running:
 
 ```bash
-kubectl get pods -n rag | grep -E "(vlm|embedding)"
+oc get pods -n rag | grep -E "(vlm|embedding)"
 ```
 
 Expected output:

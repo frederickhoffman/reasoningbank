@@ -58,7 +58,7 @@ If you are working directly with the source Helm chart, and you want to customiz
 2. Create a namespace for the deployment by running the following code.
 
     ```sh
-    kubectl create namespace rag
+    oc create namespace rag
     ```
 
 3. Configure Helm repo additions by editing and then running the following code.

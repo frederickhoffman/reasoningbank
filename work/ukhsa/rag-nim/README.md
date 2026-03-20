@@ -1,13 +1,13 @@
-# 🦅 RAG-NIM: Secure GitOps for NVIDIA RAG
+# 🦅 RAG-NIM: Secure GitOps for NVIDIA RAG on OpenShift
 
-This repository provides a production-ready implementation of a Retrieval-Augmented Generation (RAG) system, automated via **GitOps** and secured with **proactive model scanning**. It is designed specifically for private Kubernetes and OpenShift environments where data privacy and model integrity are paramount.
+This repository provides a production-ready implementation of a Retrieval-Augmented Generation (RAG) system, automated via **GitOps** and secured with **proactive model scanning**. It is designed specifically for private **OpenShift** environments where data privacy and model integrity are paramount.
 
 ## 🏗️ System Design
 
 The system orchestrates four key layers to provide a seamless RAG experience:
 
 1.  **Orchestration (Argo CD)**: Automates the deployment and synchronization of the entire stack.
-2.  **Inference (NVIDIA NIM Operator)**: Dynamically provisions and caches GPU-optimized AI models (LLMs, Embeddings, and Rerankers) directly within your cluster.
+2.  **Inference (NVIDIA NIM Operator)**: Dynamically provisions and caches GPU-optimized AI models (LLMs, Embeddings, and Rerankers) directly within your OpenShift cluster.
 3.  **Security (Protect AI ModelScan)**: A "security gate" that audits model weights for arbitrary code execution vulnerabilities before they are loaded.
 4.  **Application (NVIDIA RAG Blueprint Server)**: A high-performance FastAPI server that manages document ingestion and retrieval pipelines.
 
@@ -46,120 +46,119 @@ graph TD
 
 ---
 
-## 🛠️ Quick Start
+## 🛠️ Setup & Deployment
 
 ### 1. Prerequisites
-*   **Kubernetes Cluster** (v1.23+) with NVIDIA GPUs and the **NVIDIA GPU Operator** installed.
-*   **Argo CD** installed in the cluster.
-*   **NVIDIA NIM Operator** installed.
+*   **OpenShift cluster** (v1.23+) or **OpenShift Cluster** (v4.12+).
+*   **NVIDIA GPUs** with the **NVIDIA GPU Operator** installed.
+*   **NVIDIA NIM Operator** installed for automated model management.
+*   **Argo CD** (optional) for GitOps-based deployment.
 
-### 2. Configuration
-The system uses specialized Helm values for different environments. For a full NIM Operator setup:
+### 2. Configuration & Secrets
 
-#### 🔑 NVIDIA NGC Setup & Secrets (Required)
-The **NVIDIA NIM Operator** is the "engine" that automates your models, but it does **not** come with its own credentials. You must provide your own "keys" (NGC Secrets) to authorize the operator to download protected models from NVIDIA's registry.
+#### 🔑 NVIDIA NGC Setup
+The NIM Operator requires credentials to download protected models from NVIDIA NGC.
 
-> [!IMPORTANT]
-> **Why do I need these secrets?**
-> Even though the Operator is free to install, NVIDIA models like Llama-3 or Nemotron are protected assets. The Operator uses these secrets to "log in" to your NGC account and verify your access rights before downloading weights.
-
-1.  **Generate API Key**:
-    *   Log in to [NGC (ngc.nvidia.com)](https://ngc.nvidia.com).
-    *   Navigate to **Setup** > **API Key**.
-    *   Click **Generate API Key**. Save this key securely.
-
+1.  **Generate API Key**: Log in to [NGC](https://ngc.nvidia.com) > Setup > API Key.
 2.  **Create Image Pull Secret**:
     ```bash
-    kubectl create secret docker-registry ngc-secret \
+    oc create secret docker-registry ngc-secret \
       --docker-server=nvcr.io \
       --docker-username="\$oauthtoken" \
       --docker-password=<YOUR_NGC_API_KEY> \
       -n nvidia-rag
     ```
-
 3.  **Create API Key Secret**:
     ```bash
-    kubectl create secret opaque ngc-api \
+    oc create secret opaque ngc-api \
       --from-literal=NGC_API_KEY=<YOUR_NGC_API_KEY> \
       -n nvidia-rag
     ```
 
-Once these secrets are in place, the NIM Operator can successfully pull and cache the model weights.
+#### 🛡️ OpenShift Security (SCC Binding)
+If using **OpenShift**, you must bind the `nvidia-gpu-scc` to the application's service account to allow GPU access:
 
-### 3. Deploy via Argo CD
-Apply the application manifest:
 ```bash
-kubectl apply -f deploy/argocd/argocd-app.yaml
+# Apply the declarative binding provided in this repo
+oc apply -f deploy/openshift/scc-rolebinding.yaml
 ```
 
-Once applied, open the Argo CD dashboard, locate `nvidia-rag-blueprint`, and click **Sync**.
+---
+
+## 🚀 Deployment Options
+
+### Option A: GitOps via Argo CD (Recommended)
+This method automates the entire stack sync.
+1.  Apply the application manifest:
+    ```bash
+    oc apply -f deploy/argocd/argocd-app.yaml
+    ```
+2.  In the Argo CD dashboard, locate `nvidia-rag-blueprint` and click **Sync**.
+
+### Option B: Manual via Helm CLI
+Use the environment-specific values files for a tailored deployment:
+
+```bash
+# For OpenShift with NIM Operator:
+helm install rag-blueprint deploy/helm/nvidia-blueprint-rag \
+  -f deploy/helm/nvidia-blueprint-rag/values.yaml \
+  -f deploy/helm/values-nim-operator.yaml \
+  -f deploy/helm/values-openshift.yaml
+```
+
+---
+
+## 🤖 Self-Hosted NIM Configuration
+
+When deploying with the **NVIDIA NIM Operator**, the system automatically creates `NIMCache` and `NIMService` resources. 
+
+### Model Names
+Ensure the model names in your overrides match your target hardware:
+*   **LLM**: `nvidia/llama-3.3-nemotron-super-49b-v1.5`
+*   **Embedding**: `nvidia/llama-3.2-nv-embedqa-1b-v2`
+*   **Reranking**: `nvidia/llama-3.2-nv-rerankqa-1b-v2`
+
+### Verification
+Once deployed, verify that the RAG server can reach the internal NIM endpoints:
+```bash
+# Exec into a RAG server pod and test the NIM API
+curl http://rag-server-nim-llm:8000/v1/models
+```
 
 ---
 
 ## 🛡️ Security: ModelScan Integration
 
-This blueprint includes an **ArgoCD Pre-Sync Security Hook**. Before any new model version is synchronized, a Kubernetes Job pulls the **Protect AI ModelScan** image and audits the model weights.
+This blueprint includes an **ArgoCD Pre-Sync Security Hook**. Before any new model is synchronized, an audit Job runs **Protect AI ModelScan** to verify model weights for arbitrary code execution vulnerabilities.
 
-*   **Failure Logic**: If vulnerabilities (e.g., pickle serialization attacks) are found, the Sync fails, and the vulnerable service is never allowed to run.
-*   **Configuration**:
-    ```yaml
-    modelScan:
-      enabled: true
-      failOnViolation: true
-      severityThreshold: "high"
-    ```
 ---
 
 ## 📥 Document Ingestion Lifecycle
 
-Ingestion is the process of converting raw files (PDFs, text) into searchable vector embeddings.
+Ingestion converts raw files (PDFs, images) into searchable vector embeddings.
 
-### How is it triggered?
-1.  **UI Upload**: Using the RAG Blueprint UI (see below), you can upload documents directly. This sends a request to the **Ingestion Server**.
-2.  **API Call**: You can manually trigger ingestion by sending a POST request to the `/ingest` endpoint of the Ingestor service.
-
-### What happens during ingestion?
-1.  **Parsing**: The Ingestor extracts text and images from your documents.
-2.  **Chunking**: Large documents are split into smaller, contextual chunks.
-3.  **Embedding**: Chunks are sent to the **NVIDIA Embedding NIM** to generate high-dimensional vectors.
-4.  **Indexing**: The vectors and metadata are stored in **Milvus** (the Vector DB) for rapid retrieval.
+1.  **UI Upload**: Upload documents directly via the Chat UI.
+2.  **Batch Ingestion**: Use the local [batch_ingestion.py](scripts/batch_ingestion.py) script to ingest large datasets from your local machine to the cluster.
 
 ---
 
 ## 💬 Interacting with the RAG System
 
-Once successfully deployed via Argo CD, you have three primary ways to interact with the system:
-
-### 1. The Blueprint UI (Recommended)
-A modern, responsive chat interface is included. 
-*   **Access**: Usually available at `http://<frontend-service-ip>:3000`.
-*   **Features**: Direct PDF uploads, multi-turn chat, and source citation.
-
-### 2. Swagger API Documentation
-Excellent for developers wanting to integrate the RAG pipeline into their own apps.
-*   **RAG Server API**: `http://<rag-server-ip>:8081/docs` (Query & Chat).
-*   **Ingestor API**: `http://<ingestor-server-ip>:8082/docs` (Document Management).
-
-### 3. Verification Script
-Use the built-in [smoke test](#-verification--testing) to confirm end-to-end functionality via the CLI.
-
----
-
-## 🚀 Specialized Setup Guides
-
-*   **[ArgoCD & NIM Setup](deploy/argocd/nim-setup.md)**: Deep dive into the GitOps workflow.
-*   **[OpenShift AI Guide](docs/rh-openshift-ai.md)**: Specific instructions for Red Hat OpenShift AI (RHOAI) users.
+1.  **Blueprint UI**: Responsive chat interface available at `http://<frontend-service-ip>:3000`.
+2.  **API Documentation**:
+    *   **RAG Server**: `http://<rag-server-ip>:8081/docs`
+    *   **Ingestor**: `http://<ingestor-server-ip>:8082/docs`
 
 ---
 
 ## 🧪 Verification & Testing
 
-Verify your deployment using the provided smoke test script:
+Verify end-to-end functionality using the built-in smoke test:
 
 ```bash
 # 1. Port-forward the services
-kubectl port-forward svc/rag-server 8081:8081 -n nvidia-rag
-kubectl port-forward svc/ingestor-server 8082:8082 -n nvidia-rag
+oc port-forward svc/rag-server 8081:8081 -n nvidia-rag
+oc port-forward svc/ingestor-server 8082:8082 -n nvidia-rag
 
 # 2. Run the test
 python tests/verify_deployment.py --rag-url http://localhost:8081 --ingest-url http://localhost:8082

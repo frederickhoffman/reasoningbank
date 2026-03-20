@@ -7,7 +7,7 @@
 This documentation contains the system requirements for the [NVIDIA RAG Blueprint](readme.md).
 
 :::{important}
-You can deploy the RAG Blueprint with Docker, Helm, or NIM Operator, and target dedicated hardware or a Kubernetes cluster. 
+You can deploy the RAG Blueprint with Docker, Helm, or NIM Operator, and target dedicated hardware or a OpenShift cluster. 
 Some requirements are different depending on your target system and deployment method. 
 :::
 

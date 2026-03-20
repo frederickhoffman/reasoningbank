@@ -98,7 +98,7 @@ If you're using Helm for deployment, follow these steps to enable audio ingestio
 
 3. Verify that the audio pod is running:
    ```bash
-   kubectl get pods -n rag | grep audio
+   oc get pods -n rag | grep audio
    ```
    Output:
    ```bash
@@ -107,7 +107,7 @@ If you're using Helm for deployment, follow these steps to enable audio ingestio
    
    Check the audio service:
    ```bash
-   kubectl get svc -n rag | grep audio
+   oc get svc -n rag | grep audio
    ```
    Output:
    ```bash
@@ -116,7 +116,7 @@ If you're using Helm for deployment, follow these steps to enable audio ingestio
 
    Check the NIMService status:
    ```bash
-   kubectl get nimservice -n rag | grep audio
+   oc get nimservice -n rag | grep audio
    ```
    Output:
    ```bash

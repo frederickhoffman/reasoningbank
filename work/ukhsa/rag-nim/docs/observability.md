@@ -176,13 +176,13 @@ For Helm deployments, to port-forward services to your local computer, use the f
 - [Zipkin UI](https://zipkin.io/) – Run the following code to port-forward the Zipkin service to your local computer. Then access the Zipkin UI at `http://localhost:9411`.
 
   ```sh
-  kubectl port-forward -n rag service/rag-zipkin 9411:9411 --address 0.0.0.0
+  oc port-forward -n rag service/rag-zipkin 9411:9411 --address 0.0.0.0
   ```
 
 - [Grafana UI](https://grafana.com/) – Run the following code to port-forward the Grafana service to your local computer. Then access the Grafana UI at `http://localhost:3001` and use the default credentials (`admin`/`admin`).
 
   ```sh
-  kubectl port-forward -n rag service/rag-grafana 3001:80 --address 0.0.0.0
+  oc port-forward -n rag service/rag-grafana 3001:80 --address 0.0.0.0
   ```
 
 For detailed information on tracing, refer to [Viewing Traces in Zipkin](#view-traces-in-zipkin) and [Viewing Metrics in Grafana Dashboard](#view-metrics-in-grafana).

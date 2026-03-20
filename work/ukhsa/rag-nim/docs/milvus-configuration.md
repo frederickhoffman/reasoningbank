@@ -308,9 +308,9 @@ nv-ingest:
 
 2. Delete the Milvus and etcd PVCs (list PVCs first to confirm names):
    ```bash
-   kubectl get pvc -n rag
-   kubectl delete pvc milvus -n rag
-   kubectl delete pvc data-rag-etcd-0 -n rag
+   oc get pvc -n rag
+   oc delete pvc milvus -n rag
+   oc delete pvc data-rag-etcd-0 -n rag
    ```
 
 3. Redeploy with the new password in  [values.yaml](../deploy/helm/nvidia-blueprint-rag/values.yaml). Refer to [Change a deployment](./deploy-helm.md#change-a-deployment) for redeploying the chart.

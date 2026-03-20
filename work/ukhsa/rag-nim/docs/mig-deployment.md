@@ -15,7 +15,7 @@ refer to the [MIG Supported Hardware List](https://docs.nvidia.com/datacenter/te
 
 Before you deploy, verify that you have the following:
 
-* A Kubernetes cluster with NVIDIA H100 GPUs
+* A OpenShift cluster with NVIDIA H100 GPUs
 
    :::{note}
    This section showcases MIG support for `NVIDIA H100 80GB HBM3` GPU. The MIG profiles used in the `mig-config.yaml` are specific to this GPU.
@@ -42,15 +42,15 @@ For monitoring deployment progress, refer to [Deploy on Kubernetes with Helm](./
 6. Verify that you have a default storage class available in the cluster for PVC provisioning. One option is the local path provisioner by Rancher.   Refer to the [installation](https://github.com/rancher/local-path-provisioner?tab=readme-ov-file#installation) section of the README in the GitHub repository.
 
     ```console
-    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
-    kubectl get pods -n local-path-storage
-    kubectl get storageclass
+    oc apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+    oc get pods -n local-path-storage
+    oc get storageclass
     ```
 
 6. If the local path storage class is not set as default, you can make it default by running the following code.
 
     ```
-    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+    oc patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
     ```
 
 7. Verify that you have installed the NVIDIA GPU Operator by using the instructions [here](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html).
@@ -84,13 +84,13 @@ For monitoring deployment progress, refer to [Deploy on Kubernetes with Helm](./
 2. Create a namespace for the deployment by running the following code.
 
     ```sh
-    kubectl create namespace rag
+    oc create namespace rag
     ```
 
 3. Update the GPU Operator's ClusterPolicy to use the mixed MIG strategy by running the following code.
 
     ```bash
-    kubectl patch clusterpolicies.nvidia.com/cluster-policy \
+    oc patch clusterpolicies.nvidia.com/cluster-policy \
     --type='json' \
     -p='[{"op":"replace", "path":"/spec/mig/strategy", "value":"mixed"}]'
     ```
@@ -139,8 +139,8 @@ data:
 Apply the custom MIG configuration configMap to the node and update the ClusterPolicy, by running the following code.
 
 ```bash
-kubectl apply -n nvidia-gpu-operator -f mig-slicing/mig-config.yaml
-kubectl patch clusterpolicies.nvidia.com/cluster-policy \
+oc apply -n nvidia-gpu-operator -f mig-slicing/mig-config.yaml
+oc patch clusterpolicies.nvidia.com/cluster-policy \
   --type='json' \
   -p='[{"op":"replace", "path":"/spec/migManager/config/name", "value":"custom-mig-config"}]'
 ```
@@ -148,13 +148,13 @@ kubectl patch clusterpolicies.nvidia.com/cluster-policy \
 Label the node with MIG configuration, by running the following code.
 
 ```bash
-kubectl label nodes <node-name> nvidia.com/mig.config=custom-7x1g10-2x1g20-1x3g40-1x7g80 --overwrite
+oc label nodes <node-name> nvidia.com/mig.config=custom-7x1g10-2x1g20-1x3g40-1x7g80 --overwrite
 ```
 
 Verify that the MIG configuration is successfully applied, by running the following code.
 
 ```bash
-kubectl get node <node-name> -o=jsonpath='{.metadata.labels}' | jq . | grep mig
+oc get node <node-name> -o=jsonpath='{.metadata.labels}' | jq . | grep mig
 ```
 
 You should see output similar to the following.
@@ -260,7 +260,7 @@ To check the MIG slices, run the following code from the GPU Operator driver pod
 This runs `nvidia-smi` within the pod to check GPU MIG slices.
 
 ```bash
-kubectl exec -n gpu-operator -it <driver-daemonset-pod> -- nvidia-smi -L
+oc exec -n gpu-operator -it <driver-daemonset-pod> -- nvidia-smi -L
 ```
 
 You should see output similar to the following.

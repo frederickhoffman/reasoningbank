@@ -32,7 +32,7 @@ For hardware requirements and other information, refer to the [Support Matrix](s
 
 ## Deployment Options for RAG Blueprint
 
-You can deploy the RAG Blueprint with Docker, Helm, or NIM Operator, and target dedicated hardware or a Kubernetes cluster. 
+You can deploy the RAG Blueprint with Docker, Helm, or NIM Operator, and target dedicated hardware or a OpenShift cluster. 
 Use the following documentation to deploy the blueprint.
 
 :::{important}

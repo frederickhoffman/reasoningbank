@@ -105,11 +105,11 @@ If you're using Helm for deployment, use the following steps to configure Elasti
 
    ```bash
    # Check ECK operator pod status
-   kubectl get pods -n elastic-system
+   oc get pods -n elastic-system
    # Expected output: elastic-operator-0   1/1   Running
 
    # Verify ECK operator is ready
-   kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=elastic-operator -n elastic-system --timeout=300s
+   oc wait --for=condition=ready pod -l app.kubernetes.io/name=elastic-operator -n elastic-system --timeout=300s
    ```
 
 ### Configuration Steps
@@ -166,25 +166,25 @@ If you're using Helm for deployment, use the following steps to configure Elasti
 
    ```bash
    # Check Elasticsearch pod status
-   kubectl get pods -n rag | grep elasticsearch
+   oc get pods -n rag | grep elasticsearch
    # Expected output: rag-eck-elasticsearch-es-default-0   1/1   Running
 
    # Check Elasticsearch service
-   kubectl get svc -n rag | grep elasticsearch
+   oc get svc -n rag | grep elasticsearch
    # Expected services:
    # - rag-eck-elasticsearch-es-default (ClusterIP, port 9200)
    # - rag-eck-elasticsearch-es-http (ClusterIP, port 9200)
    # - rag-eck-elasticsearch-es-transport (ClusterIP, port 9300)
    
    # Wait for Elasticsearch to be ready
-   kubectl wait --for=condition=ready pod -l elasticsearch.k8s.elastic.co/cluster-name=rag-eck-elasticsearch -n rag --timeout=300s
+   oc wait --for=condition=ready pod -l elasticsearch.k8s.elastic.co/cluster-name=rag-eck-elasticsearch -n rag --timeout=300s
    ```
 
    Test Elasticsearch health:
 
    ```bash
    # Test from inside the cluster
-   kubectl exec -n rag rag-eck-elasticsearch-es-default-0 -- curl -s http://localhost:9200/_cluster/health
+   oc exec -n rag rag-eck-elasticsearch-es-default-0 -- curl -s http://localhost:9200/_cluster/health
    # Expected: {"cluster_name":"rag-eck-elasticsearch","status":"yellow" or "green",...}
    ```
 
@@ -193,7 +193,7 @@ If you're using Helm for deployment, use the following steps to configure Elasti
 6. After the Helm deployment, port-forward the RAG UI service:
 
    ```bash
-   kubectl port-forward -n rag service/rag-frontend 3000:3000 --address 0.0.0.0
+   oc port-forward -n rag service/rag-frontend 3000:3000 --address 0.0.0.0
    ```
 
 7. Access the UI at `http://<host-ip>:3000` and set Settings > Endpoint Configuration > Vector Database Endpoint to `http://rag-eck-elasticsearch-es-http:9200`.
@@ -211,14 +211,14 @@ curl -X GET "localhost:9200/_cluster/health?pretty"
 ### For Helm deployments:
 ```bash
 # 1. Get the name of your Elasticsearch pod:
-kubectl get pods -n rag | grep elasticsearch
+oc get pods -n rag | grep elasticsearch
 
 # 2. Run the following command, replacing <elasticsearch-pod-name> with the actual pod name:
 # Use the pod name from step 1 (e.g. rag-eck-elasticsearch-es-default-0)
-kubectl exec -n rag <elasticsearch-pod-name> -- curl -s "localhost:9200/_cluster/health?pretty"
+oc exec -n rag <elasticsearch-pod-name> -- curl -s "localhost:9200/_cluster/health?pretty"
 
 # Alternative: Port-forward and test from your machine (service name uses Helm release prefix)
-kubectl port-forward -n rag svc/rag-eck-elasticsearch-es-http 9200:9200 &
+oc port-forward -n rag svc/rag-eck-elasticsearch-es-http 9200:9200 &
 curl -X GET "localhost:9200/_cluster/health?pretty"
 ```
 
@@ -288,7 +288,7 @@ If security is enabled, create an API key using either curl. You need a user wit
 #### 1. Using curl (replace credentials and URL as appropriate):
 ```bash
 # If running inside the cluster, port-forward first:
-# kubectl -n rag port-forward svc/rag-eck-elasticsearch-es-http 9200:9200
+# oc -n rag port-forward svc/rag-eck-elasticsearch-es-http 9200:9200
 
 curl -u elastic:your-secure-password \
   -X POST "http://127.0.0.1:9200/_security/api_key" \
@@ -414,10 +414,10 @@ Wait for Elasticsearch to restart:
 
 ```bash
 # Monitor pod restart
-kubectl get pods -n rag -w | grep elasticsearch
+oc get pods -n rag -w | grep elasticsearch
 
 # Wait for pod to be ready
-kubectl wait --for=condition=ready pod -l elasticsearch.k8s.elastic.co/cluster-name=rag-eck-elasticsearch -n rag --timeout=300s
+oc wait --for=condition=ready pod -l elasticsearch.k8s.elastic.co/cluster-name=rag-eck-elasticsearch -n rag --timeout=300s
 ```
 
 #### 3. Retrieve Elasticsearch Password from Secret
@@ -426,11 +426,11 @@ When authentication is enabled, ECK automatically creates a Kubernetes secret co
 
 ```bash
 # Find the Elasticsearch user secret
-kubectl get secrets -n rag | grep elastic-user
+oc get secrets -n rag | grep elastic-user
 # Expected: rag-eck-elasticsearch-es-elastic-user
 
 # Retrieve the password
-ES_PASSWORD=$(kubectl get secret rag-eck-elasticsearch-es-elastic-user -n rag -o jsonpath='{.data.elastic}' | base64 -d)
+ES_PASSWORD=$(oc get secret rag-eck-elasticsearch-es-elastic-user -n rag -o jsonpath='{.data.elastic}' | base64 -d)
 echo "Elasticsearch password: $ES_PASSWORD"
 ```
 
@@ -446,7 +446,7 @@ Configure the RAG server and ingestor-server to use the retrieved credentials.
 Edit [`values.yaml`](../deploy/helm/nvidia-blueprint-rag/values.yaml) and set the following **new** values for Elasticsearch authentication:
 
 - **APP_VECTORSTORE_USERNAME:** set to `"elastic"` (the default Elasticsearch superuser).
-- **APP_VECTORSTORE_PASSWORD:** set to the password you retrieved in step 4 (i.e. the value of `$ES_PASSWORD`, or paste the output of the `kubectl get secret ... -o jsonpath='{.data.elastic}' | base64 -d` command).
+- **APP_VECTORSTORE_PASSWORD:** set to the password you retrieved in step 4 (i.e. the value of `$ES_PASSWORD`, or paste the output of the `oc get secret ... -o jsonpath='{.data.elastic}' | base64 -d` command).
 
 Example (replace `your-retrieved-password` with your actual `$ES_PASSWORD`):
 
@@ -478,14 +478,14 @@ For advanced use cases or production environments, you can use Elasticsearch API
 First, port-forward to access Elasticsearch:
 
 ```bash
-kubectl port-forward -n rag svc/rag-eck-elasticsearch-es-http 9200:9200
+oc port-forward -n rag svc/rag-eck-elasticsearch-es-http 9200:9200
 ```
 
 Then generate an API key using the elastic user:
 
 ```bash
 # Get the elastic password
-ES_PASSWORD=$(kubectl get secret rag-eck-elasticsearch-es-elastic-user -n rag -o jsonpath='{.data.elastic}' | base64 -d)
+ES_PASSWORD=$(oc get secret rag-eck-elasticsearch-es-elastic-user -n rag -o jsonpath='{.data.elastic}' | base64 -d)
 
 # Create an API key
 curl -u elastic:$ES_PASSWORD \
@@ -569,11 +569,11 @@ Test that the services can connect to Elasticsearch with authentication:
 
 ```bash
 # Check ingestor-server logs for successful connection
-kubectl logs -n rag -l app=ingestor-server --tail=20
+oc logs -n rag -l app=ingestor-server --tail=20
 
 # Test Elasticsearch connection manually
-ES_PASSWORD=$(kubectl get secret rag-eck-elasticsearch-es-elastic-user -n rag -o jsonpath='{.data.elastic}' | base64 -d)
-kubectl exec -n rag rag-eck-elasticsearch-es-default-0 -- curl -s -u elastic:$ES_PASSWORD http://localhost:9200/_cluster/health
+ES_PASSWORD=$(oc get secret rag-eck-elasticsearch-es-elastic-user -n rag -o jsonpath='{.data.elastic}' | base64 -d)
+oc exec -n rag rag-eck-elasticsearch-es-default-0 -- curl -s -u elastic:$ES_PASSWORD http://localhost:9200/_cluster/health
 ```
 
 
@@ -1075,28 +1075,28 @@ After deployment, verify that your custom vector database is working correctly:
 
 1. **Check pod status:**
    ```bash
-   kubectl get pods -n rag
+   oc get pods -n rag
    ```
 
 2. **Check service endpoints:**
    ```bash
-   kubectl get services -n rag
+   oc get services -n rag
    ```
 
 3. **Test vector database connectivity:**
    ```bash
    # Get your custom VDB pod name:
-   kubectl get pods -n rag
+   oc get pods -n rag
    
    # Then run the health check (replace <custom-vdb-pod-name> with your pod name and correct /health endpoint):
-   kubectl exec -n rag <custom-vdb-pod-name> -- curl -X GET "localhost:port/health"
+   oc exec -n rag <custom-vdb-pod-name> -- curl -X GET "localhost:port/health"
    ```
 
 4. **Access the RAG UI:**
 
    1. Port-forward the RAG UI service:
       ```bash
-      kubectl port-forward -n rag service/rag-frontend 3000:3000 --address 0.0.0.0
+      oc port-forward -n rag service/rag-frontend 3000:3000 --address 0.0.0.0
       ```
 
    2. Access the UI at `http://<host-ip>:3000` and configure:
@@ -1113,13 +1113,13 @@ If you encounter issues during deployment:
 
 2. **Verify image pull secrets:**
    ```bash
-   kubectl get secrets -n rag
+   oc get secrets -n rag
    ```
 
 3. **Check pod logs:**
    ```bash
-   kubectl logs -n rag deployment/rag-server
-   kubectl logs -n rag deployment/ingestor-server
+   oc logs -n rag deployment/rag-server
+   oc logs -n rag deployment/ingestor-server
    ```
 
 4. **Validate Helm values:**

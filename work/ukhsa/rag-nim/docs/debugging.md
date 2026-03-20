@@ -49,16 +49,16 @@ Monitor deployment progress by running the following code:
 
 ```bash
 # Watch pod status
-kubectl get pods -n rag -w
+oc get pods -n rag -w
 
 # Check NIMCache download status
-kubectl get nimcache -n rag
+oc get nimcache -n rag
 
 # View detailed events
-kubectl get events -n rag --sort-by='.lastTimestamp' | tail -20
+oc get events -n rag --sort-by='.lastTimestamp' | tail -20
 
 # Monitor logs of a specific pod
-kubectl logs -f <pod-name> -n rag
+oc logs -f <pod-name> -n rag
 ```
 
 The expected timeline for Kubernetes deployment is the following:
