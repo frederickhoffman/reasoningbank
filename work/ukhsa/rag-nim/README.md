@@ -48,13 +48,29 @@ graph TD
 
 ## 🛠️ Setup & Deployment
 
-### 1. Prerequisites
-*   **OpenShift cluster** (v1.23+) or **OpenShift Cluster** (v4.12+).
-*   **NVIDIA GPUs** with the **NVIDIA GPU Operator** installed.
-*   **NVIDIA NIM Operator** installed for automated model management.
+### 1. Cluster Access
+Before deploying, you must connect your terminal to your target **OpenShift** cluster.
+
+1.  **Find your API URL**: This is the cluster endpoint (e.g., `https://api.ocp-col.ukhsa.gov.uk:6443`).
+2.  **Obtain your API Token**:
+    *   Log in to the **OpenShift Web Console**.
+    *   Click your **Name/Username** in the top-right corner.
+    *   Select **Copy Login Command**, then click **Display Token**.
+3.  **Log in to your terminal**:
+    ```bash
+    oc login --token=sha256~<YOUR_TOKEN> --server=<YOUR_API_URL>
+    ```
+
+> [!TIP]
+> Once logged in, your terminal context will be saved. You only need to run this command once per session.
+
+### 2. Prerequisites
+*   **OpenShift Cluster** (v4.12+) with NVIDIA GPUs.
+*   **NVIDIA GPU Operator** installed.
+*   **NVIDIA NIM Operator** installed.
 *   **Argo CD** (optional) for GitOps-based deployment.
 
-### 2. Configuration & Secrets
+### 3. Configuration & Secrets
 
 #### 🔑 NVIDIA NGC Setup
 The NIM Operator requires credentials to download protected models from NVIDIA NGC.
