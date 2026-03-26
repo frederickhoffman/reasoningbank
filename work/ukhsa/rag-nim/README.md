@@ -64,13 +64,39 @@ Before deploying, you must connect your terminal to your target **OpenShift** cl
 > [!TIP]
 > Once logged in, your terminal context will be saved. You only need to run this command once per session.
 
-### 2. Prerequisites
+### 2. Prerequisites & CLI Tools
+To deploy from your command line, you need the **OpenShift CLI (`oc`)** and **Helm** installed.
+
+#### 🛠️ Install CLI Tools (Linux Portable)
+If you do not have these tools, run these commands to install them to your local binary folder:
+
+```bash
+# 1. Install OpenShift CLI (oc)
+curl -sLO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+tar -xzf openshift-client-linux.tar.gz
+sudo mv oc kubectl /usr/local/bin/
+
+# 2. Install Helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+#### 📋 Cluster Requirements
 *   **OpenShift Cluster** (v4.12+) with NVIDIA GPUs.
 *   **NVIDIA GPU Operator** installed.
 *   **NVIDIA NIM Operator** installed.
 *   **Argo CD** (optional) for GitOps-based deployment.
 
 ### 3. Configuration & Secrets
+
+#### 🛡️ Secure Local Environment
+To manage your credentials safely without committing them to Git:
+1.  **Copy the template**:
+    ```bash
+    cp .env.example .env
+    ```
+2.  **Edit `.env`**: Add your `NVIDIA_API_KEY`, `OPENSHIFT_API_URL`, and `OPENSHIFT_TOKEN`. This file is already in `.gitignore`.
 
 #### 🔑 NVIDIA NGC Setup
 The NIM Operator requires credentials to download protected models from NVIDIA NGC.
