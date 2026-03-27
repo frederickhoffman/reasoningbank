@@ -61,6 +61,12 @@ nv-ingest:
       all:
         tag: "v2.5.5"
     standalone:
+      # -- Fix for OpenShift SecurityContext (Handling random UID and permissions)
+      podSecurityContext:
+        enabled: true
+      securityContext:
+        enabled: true
+        # We don't specify runAsUser so OpenShift can assign its own
       resources:
         limits:
           nvidia.com/gpu: 0
