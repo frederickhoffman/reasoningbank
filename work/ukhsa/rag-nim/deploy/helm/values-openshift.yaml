@@ -35,3 +35,17 @@ nimOperator:
     storage:
       pvc:
         storageClass: ""
+# subsection: nv-ingest
+# Milvus configuration for OpenShift (disabling GPU for broader scheduling)
+nv-ingest:
+  milvus:
+    standalone:
+      resources:
+        limits:
+          nvidia.com/gpu: 0
+          cpu: "2"
+          memory: "4Gi"
+        requests:
+          nvidia.com/gpu: 0
+          cpu: "1"
+          memory: "2Gi"

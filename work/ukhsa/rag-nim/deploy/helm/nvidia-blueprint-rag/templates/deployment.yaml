@@ -55,7 +55,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.ngcApiSecret.name }}
-                  key: NVIDIA_API_KEY
+                  key: NGC_API_KEY
           {{- $apiKeysSecretName := include "apiKeysSecretName" . }}
           {{- $hasAnyKey := or .Values.apiKeysSecret.llmApiKey .Values.apiKeysSecret.embeddingsApiKey .Values.apiKeysSecret.rankingApiKey .Values.apiKeysSecret.queryRewriterApiKey .Values.apiKeysSecret.filterExpressionGeneratorApiKey .Values.apiKeysSecret.vlmApiKey .Values.apiKeysSecret.summaryLlmApiKey .Values.apiKeysSecret.reflectionLlmApiKey }}
           {{- $shouldCreateSecret := and .Values.apiKeysSecret.create (not .Values.apiKeysSecret.existingSecret) $hasAnyKey }}

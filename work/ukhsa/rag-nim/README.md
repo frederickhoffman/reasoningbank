@@ -99,7 +99,7 @@ To manage your credentials safely without committing them to Git:
 2.  **Edit `.env`**: Add your `NVIDIA_API_KEY`, `OPENSHIFT_API_URL`, and `OPENSHIFT_TOKEN`. This file is already in `.gitignore`.
 
 #### 🔑 NVIDIA NGC Setup
-The NIM Operator requires credentials to download protected models from NVIDIA NGC.
+The NIM Operator and RAG Server both use your **NGC API Key** for authorization.
 
 1.  **Generate API Key**: Log in to [NGC](https://ngc.nvidia.com) > Setup > API Key.
 2.  **Create Image Pull Secret**:
@@ -138,19 +138,44 @@ This method automates the entire stack sync.
 2.  In the Argo CD dashboard, locate `nvidia-rag-blueprint` and click **Sync**.
 
 ### Option B: Manual via Helm CLI
-Use the environment-specific values files for a tailored deployment:
+Use the environment-specific values files for a tailored deployment.
+
+#### 📦 1. Add Helm Repositories
+The chart depends on external services (NIM, Elastic, Prometheus). Note that the **NVIDIA NGC** repo requires authentication:
 
 ```bash
-# For OpenShift with NIM Operator:
+# Add NVIDIA repo (requires your NGC API Key)
+helm repo add nemo-microservices https://helm.ngc.nvidia.com/nvidia/nemo-microservices \
+  --username="\$oauthtoken" \
+  --password=<YOUR_NGC_API_KEY>
+
+# Add public repositories
+helm repo add elastic https://helm.elastic.co
+helm repo add zipkin https://zipkin.io/zipkin-helm
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+helm repo update
+```
+
+#### 🏗️ 2. Build Dependencies
+Fetch the local sub-charts before installing:
+
+```bash
+helm dependency build deploy/helm/nvidia-blueprint-rag
+```
+
+#### 🚀 3. Execute Installation
+If you have already manually created your `ngc-secret` and `ngc-api`, use the `--set` flags to skip secret creation:
+
+```bash
 helm install rag-blueprint deploy/helm/nvidia-blueprint-rag \
   -f deploy/helm/nvidia-blueprint-rag/values.yaml \
   -f deploy/helm/values-nim-operator.yaml \
-  -f deploy/helm/values-openshift.yaml
+  -f deploy/helm/values-openshift.yaml \
+  --set ngcApiSecret.create=false \
+  --set imagePullSecret.create=false
 ```
-
----
-
-## 🤖 Self-Hosted NIM Configuration
 
 When deploying with the **NVIDIA NIM Operator**, the system automatically creates `NIMCache` and `NIMService` resources. 
 
@@ -193,17 +218,36 @@ Ingestion converts raw files (PDFs, images) into searchable vector embeddings.
 
 ---
 
-## 🧪 Verification & Testing
-
-Verify end-to-end functionality using the built-in smoke test:
+## 🧪 Testing & Ingestion
+Use this consolidated block to verify your deployment and start chatting:
 
 ```bash
-# 1. Port-forward the services
-oc port-forward svc/rag-server 8081:8081 -n nvidia-rag
-oc port-forward svc/ingestor-server 8082:8082 -n nvidia-rag
+# 1. Start Port-Forwarding (Background)
+# This bridges the cluster services to your local machine
+oc port-forward svc/rag-server 8081:8081 -n nvidia-rag & \
+oc port-forward svc/ingestor-server 8082:8082 -n nvidia-rag & \
+oc port-forward svc/rag-frontend 3000:3000 -n nvidia-rag &
 
-# 2. Run the test
-python tests/verify_deployment.py --rag-url http://localhost:8081 --ingest-url http://localhost:8082
+# 2. Run the automated smoke test
+# Wait for connections to stabilize, then run the verification script
+# NOTE: On Windows, you may need to use 'python3' or 'py'
+sleep 5
+python3 tests/verify_deployment.py --rag-url http://localhost:8081 --ingest-url http://localhost:8082
+
+# 3. Batch Ingest your UKHSA dataset
+# Unzip and upload in bulk to the vector database
+unzip data/dataset.zip -d data/my_dataset
+python scripts/batch_ingestion.py \
+  --folder data/my_dataset \
+  --collection-name "ukhsa_collection" \
+  --create_collection \
+  --ingestor-port 8082
+
+# 4. Access the UI
+# Open your browser to: http://localhost:3000
 ```
+
+> [!TIP]
+> To stop all background port-forwarding sessions later, simply run `killall oc`.
 
 
