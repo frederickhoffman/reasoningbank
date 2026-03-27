@@ -26,20 +26,26 @@ ingestor-server:
 
 # subsection: nim-operator
 # Overrides for models managed by the NIM Operator
+# NIM Operator Service Overrides
 nimOperator:
   nim-llm:
-    storage:
-      pvc:
-        storageClass: ""
+    enabled: true
+    runtimeClassName: "nvidia"  # GPU Runtime (H200 isolated)
     resources:
       limits:
         nvidia.com/GH100_H200_SXM_141GB: 1
       requests:
         nvidia.com/GH100_H200_SXM_141GB: 1
-  nvidia-nim-llama-32-nv-embedqa-1b-v2:
     storage:
       pvc:
-        storageClass: ""
+        create: true
+        size: "125Gi"
+        volumeAccessMode: "ReadWriteMany"
+
+  # NVIDIA Embedding NIM
+  nemoretriever-embedding-ms:
+    enabled: true
+    runtimeClassName: "nvidia"  # GPU Runtime (H200 isolated)
     resources:
       limits:
         nvidia.com/GH100_H200_SXM_141GB: 1
@@ -57,16 +63,16 @@ nimOperator:
 # Milvus configuration for OpenShift (disabling GPU for broader scheduling)
 nv-ingest:
   milvus:
+    # Milvus Vector Database (CPU-Only for Stability)
     image:
       all:
         tag: "v2.5.5"
     standalone:
-      # -- Fix for OpenShift SecurityContext (Handling random UID and permissions)
+      # -- Compliance: Let OpenShift assign UID/GID from Restricted SCC
       podSecurityContext:
         enabled: true
       securityContext:
         enabled: true
-        # We don't specify runAsUser so OpenShift can assign its own
       resources:
         limits:
           nvidia.com/gpu: 0
