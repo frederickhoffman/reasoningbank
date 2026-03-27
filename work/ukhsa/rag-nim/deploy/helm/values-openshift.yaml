@@ -39,6 +39,9 @@ nimOperator:
 # Milvus configuration for OpenShift (disabling GPU for broader scheduling)
 nv-ingest:
   milvus:
+    image:
+      all:
+        tag: "v2.5.5"
     standalone:
       resources:
         limits:
