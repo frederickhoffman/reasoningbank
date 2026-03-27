@@ -17,6 +17,9 @@ spec:
         app.kubernetes.io/component: rag-server
     spec:
       serviceAccountName: {{ include "nvidia-blueprint-rag.serviceAccountName" . }}
+      {{- if .Values.runtimeClassName }}
+      runtimeClassName: {{ .Values.runtimeClassName }}
+      {{- end }}
       {{- if .Values.imagePullSecret.name }}
       imagePullSecrets:
         - name: {{ .Values.imagePullSecret.name }}

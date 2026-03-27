@@ -20,6 +20,9 @@ spec:
         app.kubernetes.io/component: ingestor-server
         {{- include "nvidia-blueprint-rag.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.runtimeClassName }}
+      runtimeClassName: {{ .Values.runtimeClassName }}
+      {{- end }}
       {{- if $cfg.imagePullSecret.name }}
       imagePullSecrets:
         - name: {{ $cfg.imagePullSecret.name }}

@@ -1,5 +1,5 @@
-# OpenShift Specific Overrides for NVIDIA RAG Blueprint
 # This file provides declarative overrides for deploying to Red Hat OpenShift.
+runtimeClassName: "nvidia"
 
 # subsection: rag-server
 serviceAccount:

@@ -22,6 +22,9 @@ spec:
         labels:
           {{- include "nvidia-blueprint-rag.selectorLabels" $root | nindent 10 }}
     spec:
+      {{- if $root.Values.runtimeClassName }}
+      runtimeClassName: {{ $root.Values.runtimeClassName }}
+      {{- end }}
       {{- with $root.Values.imagePullSecret }}
       imagePullSecrets:
         - name: {{ .name }}
